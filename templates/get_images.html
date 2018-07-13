@@ -1,0 +1,19 @@
+{% extends 'base.html' %}
+
+{% block title %}Improves your conversions through Search Box{% endblock %}
+
+{% block content %}
+
+<!-- Content -->
+<div class="content clearfix">
+  {% if images: %}
+    {% for image in images %}
+        <p>{{ image.src }} </p>
+    {% endfor %}
+  {% endif %}
+
+</div>
+<!-- Content End -->
+
+
+{% endblock %}

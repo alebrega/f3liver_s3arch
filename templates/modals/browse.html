@@ -1,0 +1,21 @@
+<!-- The Modal -->
+<div id="Feliver_myModal" class="Feliver_modal" style="z-index:100000000;">
+
+  <!-- Modal content -->
+  <div class="Feliver_modal-content">
+    <span class="Feliver_close">&times;</span>
+    <h1>Upload a image to Search</h1>
+      <div id="drop-zone">
+      Drop images here...
+      <div id="clickHere">
+          or click here..
+          <form method="POST" action="{{action}}" enctype="multipart/form-data">
+            <input type="hidden" name="shop" value="feliver2.myshopify.com">
+            <input type="file" name="image_feliver">
+            <input type="submit" value="Upload">
+          </form>
+      </div>
+    </div>
+  </div>
+
+</div>
