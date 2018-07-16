@@ -20,7 +20,8 @@ else:
     HOST = "feliver.com"
     HTTPS="https://"
     DEBUG = False
-    MYSQL_DATABASE_HOST = "aaqudwzjpiyvtl.cgx6t1co0xhl.us-east-1.rds.amazonaws.com:3306"
+    MYSQL_DATABASE_HOST = "aaxvajip2a8295.cgx6t1co0xhl.us-east-1.rds.amazonaws.com:3306"
+    #MYSQL_DATABASE_HOST = "aaqudwzjpiyvtl.cgx6t1co0xhl.us-east-1.rds.amazonaws.com:3306"
     MYSQL_DATABASE_USER = "FeLiVer"
     MYSQL_DATABASE_DB = "ebdb"
     MYSQL_DATABASE_PASSWORD = "FeLiVerPasS"

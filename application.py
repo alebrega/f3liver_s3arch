@@ -4,7 +4,7 @@ from flask import flash,render_template,request,redirect,session, render_templat
 from  pickle import dumps
 import requests, uuid, os,json, shopify,urllib
 from pprint import pprint
-from lib import libraries
+import libraries
 from tasks import make_celery
 from celery import chain
 from werkzeug.utils import secure_filename
@@ -84,10 +84,12 @@ def app():
         else:
             return render_template('admin/indexing_images.html')
 
+
 @application.route('/app/install', methods=['GET', 'POST'])
 def install():
     shop = request.args.get("shop")
     if shop is not None:
+        libraries.delete(shop)
         nonce =uuid.uuid4().hex + uuid.uuid1().hex
         session['nonce'] = nonce
         url="https://"+shop+"/admin/oauth/authorize?client_id="+api_key+"&amp;scope="+scopes+"&amp;redirect_uri="+application.config['REDIRECT_URI']+"&amp;state="+nonce+"&amp;grant_options[]="
@@ -110,19 +112,65 @@ def install_ok():
             c = Customer(r['access_token'],hmac,shop)
             db.session.add(c)
             db.session.commit()
-        action=application.config['HTTPS']+application.config['HOST']+"/search"
-        content=render_template('modals/browse.html',action=action)
-        css_content=render_template('modals/modal.html')
-        result = chain(get_images(shop),download_images(shop),modify_search_box(shop),add_code_shopify(shop,'body',content),add_code_shopify(shop,'head',css_content))
-        if result:
-            return render_template('admin/index.html')
-        else:
-            if result.parent:
-                return render_template('admin/indexing_images.html')
+            action=application.config['HTTPS']+application.config['HOST']+"/search"
+            content=render_template('modals/browse.html',action=action,shop=shop)
+            css_content=render_template('modals/modal.html')
+            result = chain(get_images(shop),download_images(shop),modify_search_box(shop),add_code_shopify(shop,'body',content),add_code_shopify(shop,'head',css_content),add_webhooks(shop))
+            if result:
+                return render_template('admin/index.html')
             else:
-                return render_template('admin/indexing_products.html')
+                if result.parent:
+                    return render_template('admin/indexing_images.html')
+                else:
+                    return render_template('admin/indexing_products.html')
     return render_template('admin/index.html')
 
+@celery.task(name='application.add_webhooks')
+def add_webhooks(shop):
+    customer = Customer.query.filter_by(shop=shop).first()
+    shopify.Session.setup(api_key=api_key, secret=api_secret_key)
+    session = shopify.Session(customer.shop, customer.code)
+    shopify.ShopifyResource.activate_session(session)
+
+    action=application.config['HTTPS']+application.config['HOST']+"/webhook/product/create"
+    sw = shopify.Webhook()
+    sw.topic='products/create'
+    sw.address: action
+    sw.format= "json"
+    sw.save()
+
+    s = ScriptTag(sw.id,'webhook-product-create',shop)
+    db.session.add(s)
+    db.session.commit()
+
+    action=application.config['HTTPS']+application.config['HOST']+"/webhook/product/delete"
+    sw = shopify.Webhook()
+    sw.topic='products/delete'
+    sw.address: action
+    sw.format= "json"
+    sw.save()
+
+    s = ScriptTag(sw.id,'webhook-product-delete',shop)
+    db.session.add(s)
+    db.session.commit()
+
+    action=application.config['HTTPS']+application.config['HOST']+"/webhook/product/update"
+    sw = shopify.Webhook()
+    sw.topic='products/update'
+    sw.address: action
+    sw.format= "json"
+    sw.save()
+
+    s = ScriptTag(sw.id,'webhook-product-update',shop)
+    db.session.add(s)
+    db.session.commit()
+
+    return True
+
+@application.route('/webhook/product/<action>')
+def listen_product_webhook(action):
+    if action=='update' or action=='create':
+        libraries.indexImages(request.headers.get('X-Shopify-Shop-Domain'))
 
 def get_all_resources(resource, **kwargs):
     resource_count = resource.count(**kwargs)
@@ -240,22 +288,36 @@ def js(js_file):
 def download_images(shop):
     images=Product.query.filter(Product.shop==shop).filter(Product.download=='0').all()
     if len(images):
-        if not os.path.exists(PRODUCT_IMAGES_FOLDER+shop+'/'):
+        if not os.path.exists(PRODUCT_IMAGES_FOLDER+'/'):
             try:
-                os.makedirs(PRODUCT_IMAGES_FOLDER+shop+'/')
+                os.makedirs(PRODUCT_IMAGES_FOLDER+'/')
             except OSError as e:
                 if e.errno != errno.EEXIST:
                     raise
         for image in images:
-            path_file=PRODUCT_IMAGES_FOLDER+shop+'/'+str(image.id)+'.jpg'
+            path_file=PRODUCT_IMAGES_FOLDER+'/'+str(image.id)+'.jpg'
             if not os.path.exists(path_file):
                 urllib.request.urlretrieve(image.image_src,path_file)
             image.download=True
             db.session.commit()
+        indexImages(shop)
     else:
         return False
     return True
 
+
+
+def indexImages(shop):
+    images=Product.query.filter(Product.shop==shop).filter(Product.indexed=='0').all()
+    for image in images:
+        img_path=PRODUCT_IMAGES_FOLDER+str(image.id)+".jpg"
+        img = Image.open(img_path)  # PIL image
+        feature = fe.extract(img)
+        feature_path = 'static/feliver_feature_images/' + os.path.splitext(os.path.basename(img_path))[0] + '.pkl'
+        pickle.dump(feature, open(feature_path, 'wb'))
+        image.indexed=True
+        db.session.commit()
+    return True
 @application.route('/admin/error.html')
 def error():
     link_install=application.config['INSTALL_LINK']
