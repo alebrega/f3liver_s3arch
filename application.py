@@ -165,12 +165,34 @@ def add_webhooks(shop):
     db.session.add(s)
     db.session.commit()
 
+    action=application.config['HTTPS']+application.config['HOST']+"/app/uninstalled"
+    sw = shopify.Webhook()
+    sw.topic='app/uninstalled'
+    sw.address: action
+    sw.format= "json"
+    sw.save()
+
+    s = ScriptTag(sw.id,'webhook-app-uninstalled',shop)
+    db.session.add(s)
+    db.session.commit()
+
     return True
 
 @application.route('/webhook/product/<action>')
 def listen_product_webhook(action):
     if action=='update' or action=='create':
         libraries.indexImages(request.headers.get('X-Shopify-Shop-Domain'))
+
+@application.route('/app/uninstalled')
+def uninstall():
+    shop=request.headers.get('X-Shopify-Shop-Domain')
+    libraries.delete(shop)
+    layout='layout/theme.liquid'
+    action=application.config['HTTPS']+application.config['HOST']+"/search"
+    content=render_template('modals/browse.html',action=action,shop=shop)
+    libraries.remove_code_shopify(shop,content,layout)
+    content=render_template('modals/modal.html')
+    libraries.remove_code_shopify(shop,content,layout)
 
 def get_all_resources(resource, **kwargs):
     resource_count = resource.count(**kwargs)

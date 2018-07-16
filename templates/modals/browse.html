@@ -1,20 +1,23 @@
-<!-- The Modal -->
 <div id="Feliver_myModal" class="Feliver_modal" style="z-index:100000000;">
-
-  <!-- Modal content -->
   <div class="Feliver_modal-content">
     <span class="Feliver_close">&times;</span>
-    <h1>Upload a image to Search</h1>
+    <h1>Upload an image to Search</h1>
       <div id="drop-zone">
-      Drop images here...
       <div id="clickHere">
-          or click here..
           <form method="POST" action="{{action}}" enctype="multipart/form-data">
             <input type="hidden" name="shop" value="{{shop}}">
             <input type="file" name="image_feliver">
-            <input type="submit" value="Upload">
+            <input type="submit" value="Search by Image">
           </form>
       </div>
+        <div style="padding-top: 2%;">
+          <h1>OR</h1>
+          <h2>Search by text here</h2>
+          <form action="/search" method="get">
+            <input type="search" name="q">
+            <input type="submit" value="Search by Text">
+          </form>
+        </div>
     </div>
   </div>
 

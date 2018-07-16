@@ -57,6 +57,10 @@ window.onclick = function(event) {
 $( "input[name=q]" ).click(function() {
   var modal = document.getElementById('Feliver_myModal');
   modal.style.display = "block";
+  let searchParams = new URLSearchParams(window.location.search);
+  if (searchParams.has('q')){
+    $( "input[name=q]" ).val(searchParams.get('q'));
+  }
   $('#Feliver_myModal').focus();
 });
 
