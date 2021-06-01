@@ -60,7 +60,7 @@ tensorboard==1.8.0
 tensorflow
 termcolor==1.1.0
 tqdm==4.23.4
-urllib3==1.23
+urllib3==1.26.5
 vine==1.1.4
 virtualenv==16.0.0
 Werkzeug==0.14.1
