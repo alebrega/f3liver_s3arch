@@ -38,7 +38,7 @@ matplotlib==2.2.2
 meld3==1.0.2
 numpy==1.14.5
 Pillow
-protobuf==3.6.0
+protobuf==3.18.3
 py-moneyed==0.7.0
 pyactiveresource==2.1.2
 pycparser==2.18
